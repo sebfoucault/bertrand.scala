@@ -50,7 +50,7 @@ class Solver {
     }
 
     def deriveProblemByOp(pnop: ProblemAndOps, op: Op) = pnop match {
-        case ProblemAndOps(Problem(target, pbValues @ List(_,_, _*)), ops) => recombine(pnop, opComb(pbValues, op)) 
+        case ProblemAndOps(Problem(_, pbValues @ List(_,_, _*)), _) => recombine(pnop, opComb(pbValues, op)) 
         case _ => Nil
     }
 
