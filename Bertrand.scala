@@ -1,3 +1,4 @@
+import scala.annotation.tailrec
 
 final class Op(val sym: Char, val commutative: Boolean, etor: (Int,Int) => Int, vtor: (Int,Int) => Boolean) {
     def apply(x: Int, y: Int) = etor(x,y)
@@ -22,16 +23,13 @@ case class Challenge(target: Int, values: List[Int]) {
 
 case class ChallengeAndOps(problem: Challenge, operations: List[OpInstance])
 
-class Solver {
+final class Solver {
 
-    def iRemoveDuplicates[T,X](l: List[T], f: Set[X], k: (T) => X): List[T] = l match {
-        case Nil => Nil
-        case x :: xs => if (f.contains(k(x))) iRemoveDuplicates(xs, f, k) else x :: iRemoveDuplicates(xs, f+k(x), k)
+    def unique[T,X](l: List[T], k: (T) => X): List[T] = {
+        l.groupBy(k).map{ case(key,value) => value.head }.toList
     }
 
-    def removeDuplicates[T,X](l: List[T], k: (T) => X): List[T] = {
-        iRemoveDuplicates(l, Set(), k)
-    }
+    def uniqueChallengeAndOps = unique( _:List[ChallengeAndOps], (x: ChallengeAndOps) => x.problem.values.sorted)
 
     def extractAt[T](l: List[T], i: Int, j: Int) = {
         val z = l.indices zip l
@@ -53,9 +51,9 @@ class Solver {
         pairComb(l, !op.commutative).toList.filter(tester).map(mapper)
     }
 
-    def recombine(pnop: ChallengeAndOps, combs: List[(List[Int],OpInstance)]): List[ChallengeAndOps] = combs match {
-        case x :: xs => ChallengeAndOps(Challenge(pnop.problem.target, x._1), x._2 :: pnop.operations) :: recombine(pnop, xs)
-        case Nil => Nil
+    def recombine(pnop: ChallengeAndOps, combs: List[(List[Int],OpInstance)]): List[ChallengeAndOps] = {
+        val r = combs.map( (cmb:(List[Int],OpInstance)) => ChallengeAndOps(Challenge(pnop.problem.target, cmb._1), cmb._2 :: pnop.operations) )
+        uniqueChallengeAndOps(r)   
     }
 
     def deriveChallengeByOp(pnop: ChallengeAndOps, op: Op) = pnop match {
@@ -63,17 +61,19 @@ class Solver {
         case _ => Nil
     }
 
-    def deriveChallengesByOps(pnop: ChallengeAndOps, ops: List[Op]): List[ChallengeAndOps] = ops match {
-        case Nil => Nil
-        case x :: xs => removeDuplicates(deriveChallengeByOp(pnop, x) ::: deriveChallengesByOps(pnop, xs), (x: ChallengeAndOps) => x.problem.values.sorted)
+    def deriveChallengesByOps(pnop: ChallengeAndOps, ops: List[Op]): List[ChallengeAndOps] = {
+        val r = ops.map((x:Op)=>deriveChallengeByOp(pnop,x)).flatten
+        uniqueChallengeAndOps(r)
     }
 
-    def solve(pnop: ChallengeAndOps) = {
-        if (pnop.problem.solved) Some(pnop.operations.reverse) else doSolve(deriveChallengesByOps(pnop, Op.all))
-    }
-
+    @tailrec
     def doSolve(pnops: List[ChallengeAndOps]): Option[List[OpInstance]] = pnops match {
-        case x :: xs => solve(x) orElse doSolve(xs)
+        case x :: xs => {
+            if (x.problem.solved) 
+                Some(x.operations.reverse) 
+            else 
+                doSolve(uniqueChallengeAndOps(xs ::: deriveChallengesByOps(x, Op.all)))
+        }   
         case _ => None
     }
 
