@@ -36,13 +36,11 @@ final class Solver {
     }
 
     def pairComb(l:List[Int], commute: Boolean) = 
-        for (i <- 0 to l.length - 1 ; j <- 0 to l.length - 1 ; if (i != j && (commute || i < j))) yield {
-            extractAt(l, i, j)
-        }
+        for (i <- 0 to l.length - 1 ; j <- 0 to l.length - 1 ; if (i != j && (commute || i < j))) yield extractAt(l, i, j)
 
     def opComb(l:List[Int], op: Op):List[(List[Int], OpInstance)] = {
-        val tester = (x:((Int,Int),List[Int])) => op.validate(x._1._1, x._1._2)
-        val mapper = (x:((Int,Int),List[Int])) => ((op(x._1._1, x._1._2) :: x._2).sorted, new OpInstance(x._1._1, x._1._2, op))
+        val tester = (x:((Int,Int),List[Int])) => x match { case((o1, o2), l) => op.validate(o1, o2) }
+        val mapper = (x:((Int,Int),List[Int])) => x match { case((o1, o2), l) => ((op(o1, o2)::l).sorted, new OpInstance(o1, o2, op)) }
         pairComb(l, !op.commutative).toList.collect( { case x if (tester(x)) => mapper(x) } )
     }
 
