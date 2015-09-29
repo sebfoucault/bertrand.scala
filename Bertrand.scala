@@ -59,11 +59,23 @@ final class Solver {
 
     def deriveChallenges(pnop: ChallengeAndOps, ops: List[Op]) = ops.map((x:Op) => deriveChallengeByOp(pnop,x)).flatten
 
-    @tailrec
-    def doSolve(pnops: Seq[ChallengeAndOps]): Option[Seq[OpInstance]] = pnops match {
+    def deriveChallenges(pnops: Seq[ChallengeAndOps], ops: List[Op]): List[ChallengeAndOps] = {
+        def d(pnops: Seq[ChallengeAndOps], ops: List[Op], acc: List[ChallengeAndOps]): List[ChallengeAndOps] = pnops match{
+            case x :: xs => d(xs, ops, deriveChallenges(x, ops) ::: acc)
+            case Nil => acc
+        }
+        d(pnops, ops, Nil)
+    }
+    
+    def solution(pnops: Seq[ChallengeAndOps]): Option[Seq[OpInstance]] = pnops match {
         case x :: xs if (x.problem.solved) =>  Some(x.operations.reverse)
-        case x :: xs =>  doSolve(uniqueChallengeAndOps(xs ::: deriveChallenges(x, Op.all)))
+        case x :: xs => solution(xs)
         case _ => None
+    }
+
+    def doSolve(pnops: Seq[ChallengeAndOps]): Option[Seq[OpInstance]] = solution(pnops) match {
+        case Some(s) => Some(s)
+        case None => doSolve(uniqueChallengeAndOps(deriveChallenges(pnops, Op.all)))
     }
 
     def solve(p: Challenge) = doSolve( ChallengeAndOps(Challenge(p.target, p.values.sorted),Nil) :: Nil)
