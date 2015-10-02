@@ -29,10 +29,10 @@ final class Solver {
     def uniqueChallengeOps = unique( _:List[ChallengeOps], (x: ChallengeOps) => x.challenge.values)
 
     def extractAt(l: List[Int], i: Int, j: Int): Extraction = {
-        val z = l.indices zip l
-        val a = z.filter( _ match { case (ix,v) => ix == i } ).toList match { case (_, v) :: s => v }
-        val b = z.filter( _ match { case (ix,v) => ix == j } ).toList match { case (_, v) :: s => v }
-        val r = z.filter( _ match { case (ix,v) => ix != i && ix != j } ).map( _ match { case (_, v) => v } ).toList 
+        val z = l.zipWithIndex
+        val a = z.filter( _ match { case (_,ix) => ix == i } ) match { case (v,_) :: s => v }
+        val b = z.filter( _ match { case (_,ix) => ix == j } ) match { case (v,_) :: s => v }
+        val r = z.filter( _ match { case (_,ix) => ix != i && ix != j } ).map( _ match { case (v,_) => v } ) 
         Extraction(a,b,r)    
     }
 
@@ -64,7 +64,7 @@ final class Solver {
     }
     
     def solution(pnops: Seq[ChallengeOps]): Option[Seq[OpInstance]] = pnops match {
-        case ChallengeOps(Challenge(target, values), ops) :: xs if (values.contains(target)) =>  Some(ops.reverse)
+        case ChallengeOps(Challenge(tgt, vals), ops) :: xs if (vals.contains(tgt)) =>  Some(ops.reverse)
         case x :: xs => solution(xs)
         case _ => None
     }
